@@ -1,6 +1,6 @@
-"""ADC → Range-Doppler-Azimuth-Elevation cube for TI IWR1843.
+"""ADC → Range-Doppler-Azimuth-Elevation cube for TI AWR1843.
 
-Implements the standard four-stage FFT chain for a TI IWR1843 radar with 3 Tx
+Implements the standard four-stage FFT chain for a TI AWR1843 radar with 3 Tx
 × 4 Rx antennas operating in BPM TDM-MIMO mode:
 
     ADC complex (samples, chirps, rx=4, tx=3)
@@ -12,7 +12,7 @@ Implements the standard four-stage FFT chain for a TI IWR1843 radar with 3 Tx
         ↓ magnitude
     cube float32 (range=128, doppler=N_chirps, azimuth=8, elevation=8)
 
-The MIMO virtual-array layout is derived from the IWR1843's antenna placement
+The MIMO virtual-array layout is derived from the AWR1843's antenna placement
 in BPM mode and matches the unfold used in
 `SelfMadePackage/IPLab_mmwavePCD/radarPcdProcessing/` and
 `SemanticRadar/radar_clip_alignment/radar_vl/data/radar_io.py`. Per the

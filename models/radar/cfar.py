@@ -108,7 +108,7 @@ def cube_to_detections(
         columns = (range_bin, azimuth_bin, elevation_bin, doppler_bin, peak_power)
 
     `elevation_bin_range` clamps the argmax-elevation search to a contiguous
-    sub-range [lo, hi). The IWR1843 has only 2 physical elevation MIMO rows
+    sub-range [lo, hi). The AWR1843 has only 2 physical elevation MIMO rows
     that are zero-padded to 8 bins; the outer elevation bins are essentially
     hallucinated by the FFT and cause z-axis spread far outside the scene's
     real vertical extent (verified empirically on B408 indoor — LIRA z spread

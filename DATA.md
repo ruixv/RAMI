@@ -56,9 +56,9 @@ Each capture directory contains four modalities used by this code:
 │   ├── frame_*.png        # decoded RGB frames (the benchmark frames)
 │   ├── pose.txt           # dense 6-DoF pose stream [x y z qx qy qz qw]
 │   └── timestamp.txt      # per-tick timestamps
-├── 1843_azi/ADC/          # TI IWR1843 mmWave radar, horizontal mount
+├── 1843_azi/ADC/          # TI AWR1843 mmWave radar, horizontal mount
 │   └── frame_*.bin        # raw complex ADC (samples=128, chirps=128, rx=4, tx=3)
-├── 1843_ele/ADC/          # second IWR1843, rotated (vertical) mount
+├── 1843_ele/ADC/          # second AWR1843, rotated (vertical) mount
 ├── Lidar_pcd/             # LiDAR reference (used only by the LiDAR
 │   └── frame_*.bin        # control arm and geometry evaluation), float32 (N,4)
 └── (each modality has its own timestamp.txt; frames are matched by
@@ -67,7 +67,7 @@ Each capture directory contains four modalities used by this code:
 
 - RGB: locked intrinsics fx = fy = 528.0, cx = 640.0, cy = 360.0,
   right-handed Z-up world frame.
-- Radar: single-chip TI IWR1843, ~0.125 m range resolution; this code
+- Radar: single-chip TI AWR1843, ~0.125 m range resolution; this code
   re-processes raw ADC (range FFT + CFAR), no pre-built point clouds are
   used.
 - Typical rates: radar 10–20 Hz, RGB (decoded) ~6 Hz, LiDAR ~10 Hz,
