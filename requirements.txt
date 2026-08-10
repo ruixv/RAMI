@@ -1,0 +1,11 @@
+# Tested combination (see ENVIRONMENT.md for the full stack notes).
+# Python 3.10, CUDA 12.1.
+torch==2.4.0          # +cu121 build
+gsplat==1.5.3         # 3DGS rasterization backend (JIT-compiles CUDA at first use)
+numpy==2.2.6
+pillow==12.2.0
+opencv-python==5.0.0  # SIFT matching for the SfM control arm
+scipy==1.15.3
+scikit-image==0.25.2  # SSIM in evaluation
+lpips==0.1.4          # LPIPS (AlexNet) in evaluation
+transformers==4.45.0  # Depth Anything V2 (depth-estimation pipeline)

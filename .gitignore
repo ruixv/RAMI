@@ -1,0 +1,23 @@
+# python
+__pycache__/
+*.pyc
+*.egg-info/
+.venv/
+
+# datasets dropped into the default RAMI_DATA_ROOT (./data) -- keep the
+# loader package (tracked .py files) but ignore raw capture directories
+/data/*/
+!/data/radareyes/
+!/data/lowlight/
+
+# outputs
+outputs/
+runs/
+*.ckpt
+*.pt
+
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

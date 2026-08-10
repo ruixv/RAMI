@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script>document.documentElement.classList.add('js');</script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAMI: Radar-Anchored Metric Initialization for 3D Gaussian Splatting</title>
+<meta name="description" content="RAMI anchors monocular depth with a single-chip mmWave radar to seed 3D Gaussian Splatting under suboptimal illumination, matching LiDAR-cloud initialization at commodity cost.">
+<meta property="og:title" content="RAMI: Radar-Anchored Metric Initialization for 3DGS">
+<meta property="og:description" content="A commodity single-chip radar seeds 3DGS where SfM and depth supervision both fail under poor illumination.">
+<meta property="og:image" content="static/images/teaser.png">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="static/vendor/bulma.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="static/css/style.css">
+</head>
+<body>
+
+<!-- ===================== HERO ===================== -->
+<header class="hero-head-wrap">
+  <div class="container has-text-centered" style="max-width:1000px;">
+    <h1 class="paper-title"><span class="accent">Radar-Anchored</span> Metric Initialization<br>
+      for 3D Gaussian Splatting under Suboptimal Illumination</h1>
+
+    <div class="link-buttons">
+      <span class="button is-soon" title="Coming soon">
+        <span class="icon"><i class="fas fa-file-pdf"></i></span><span>Paper (coming soon)</span></span>
+      <span class="button is-soon" title="Coming soon">
+        <span class="icon"><i class="fas fa-file-lines"></i></span><span>Supplementary (coming soon)</span></span>
+      <a class="button" href="https://github.com/ruixv/RAMI">
+        <span class="icon"><i class="fab fa-github"></i></span><span>Code</span></a>
+      <span class="button is-soon" title="Coming soon">
+        <span class="icon"><i class="fas fa-database"></i></span><span>Benchmark (coming soon)</span></span>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== TEASER ===================== -->
+<section class="section reveal" style="padding-top:2.4rem;padding-bottom:1.6rem;">
+  <div class="container" style="max-width:1180px;">
+    <figure class="media-fig">
+      <img src="static/images/teaser.png" alt="RAMI teaser: task, idea, outcome">
+      <figcaption class="media-cap">
+        <b>(a)</b> Under poor illumination SfM triangulation collapses and random 3DGS becomes a basin lottery.
+        <b>(b)</b> RAMI injects metric geometry <em>once</em>: a frozen monocular depth model is lifted to metric
+        scale by a single weighted scale&ndash;shift fit to raw radar ranges, seeding an otherwise unchanged 3DGS pipeline.
+        <b>(c)</b> The commodity radar matches the far more expensive LiDAR-cloud reference
+        (24.03 vs.&nbsp;24.19&nbsp;dB) without using LiDAR at any stage.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== ABSTRACT ===================== -->
+<section class="section reveal is-soft">
+  <div class="container" style="max-width:860px;">
+    <h2 class="section-title">Abstract</h2>
+    <p class="abstract-text">
+      3D Gaussian Splatting (3DGS) is now the standard way for a mobile robot or a headset to synthesize
+      novel views of a space it has walked through. Poor illumination destroys the structure-from-motion
+      (SfM) points that bootstrap 3DGS, and supervising the model with range-sensor depth is not a
+      substitute, because at single-chip angular resolution that loss helps or hurts unpredictably. We
+      present <b>RAMI</b>, a radar-anchored metric initialization that injects sensor geometry at the one
+      stage of 3DGS where it cannot conflict with photometric optimization. RAMI lifts relative depth from
+      a frozen monocular foundation model to metric scale with one per-scene scale&ndash;shift fit against
+      single-chip mmWave radar ranges, two scalars that vision cannot recover in the dark, and fuses the
+      result into the seed cloud of an unchanged 3DGS pipeline. Across an illumination-stratified indoor
+      benchmark curated from a public 237-capture corpus, from bright rooms to lights-off, RAMI improves
+      PSNR over matched random initialization by <b>+1.11&nbsp;dB</b> on average and by up to
+      +3.9&nbsp;dB in the dark, and it matches a far more expensive LiDAR-cloud reference without using
+      LiDAR at any stage. These results show that for mobile capture in the dark, a coarse range sensor is
+      worth far more as a one-shot metric anchor than as a supervisor, which is what lets a commodity radar
+      stand in for a LiDAR-grade seed.
+    </p>
+    <div class="tldr">
+      <b>TL;DR.</b> Poor light destroys the SfM points 3DGS starts from. A commodity single-chip radar is far
+      too coarse to supervise a single pixel, yet it measures exactly the two scalars monocular depth is
+      missing. Injected once as the seed instead of attached as a loss, it places a whole scene at
+      LiDAR-level quality.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== VIDEO COMPARISONS ===================== -->
+<section class="section reveal">
+  <div class="container" style="max-width:1180px;">
+    <h2 class="section-title">Novel-View Rendering</h2>
+    <p class="section-sub">Held-out novel views swept across each capture. Left to right:
+      ground truth, randomly initialized 3DGS, and RAMI (same poses, same budget, same photometric loss;
+      only the initial point set differs). Dark scenes are gamma-brightened for display.</p>
+
+    <div class="vid-grid">
+      <div class="vid-card">
+        <div class="vid-tag">Dark Lobby: lights-off capture (RAMI&nbsp;+3.88&nbsp;dB over random)</div>
+        <video autoplay loop muted playsinline poster="static/videos/poster_ndarklob2.jpg">
+          <source src="static/videos/compare_ndarklob2.mp4" type="video/mp4"></video>
+      </div>
+      <div class="vid-card">
+        <div class="vid-tag">Office (RAMI&nbsp;+2.67&nbsp;dB)</div>
+        <video autoplay loop muted playsinline poster="static/videos/poster_n0630b.jpg">
+          <source src="static/videos/compare_n0630b.mp4" type="video/mp4"></video>
+      </div>
+      <div class="vid-card">
+        <div class="vid-tag">Lounge (RAMI&nbsp;+1.72&nbsp;dB)</div>
+        <video autoplay loop muted playsinline poster="static/videos/poster_n2F.jpg">
+          <source src="static/videos/compare_n2F.mp4" type="video/mp4"></video>
+      </div>
+      <div class="vid-card" id="vid-corridor">
+        <div class="vid-tag">Hall (RAMI&nbsp;+0.79&nbsp;dB)</div>
+        <video autoplay loop muted playsinline poster="static/videos/poster_nF2hall.jpg">
+          <source src="static/videos/compare_nF2hall.mp4" type="video/mp4"></video>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== DRAG-TO-COMPARE (still + video) ===================== -->
+<section class="section is-soft reveal">
+  <div class="container" style="max-width:1120px;">
+    <h2 class="section-title">Drag to Compare</h2>
+    <p class="section-sub">Drag the divider, or hover over it. Left of the handle is randomly initialized
+      3DGS, right is RAMI; same poses, same budget, same loss. Start with the crisp <b>still</b> frames to
+      inspect detail, then switch to <b>video</b> to see the gain hold across viewpoints.</p>
+
+    <div data-tabgroup="compare" class="cmp-group show-still has-text-centered">
+      <div class="mode-toggle">
+        <button class="active" data-mode="still"><span class="icon-em">&#128247;</span>Still</button>
+        <button data-mode="video"><span class="icon-em">&#127909;</span>Video</button>
+      </div>
+
+  <div data-scene="ndarklob2" class="scene-row">
+    <h3 class="scene-row-title">Dark Lobby <span class="gain">+3.88 dB</span></h3>
+    <div class="vc-grid">
+    <div>
+      <div class="vc-name">Random Init &nbsp;&harr;&nbsp; RAMI (Ours)</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <img class="vc-after" src="static/sliders/ndarklob2_radarinit5k.jpg" alt="RAMI">
+        <img class="vc-before" src="static/sliders/ndarklob2_rgbonly.jpg" alt="Random">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/ndarklob2_radarinit5k.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/ndarklob2_rgbonly.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="vc-name">RAMI (Ours) &nbsp;&harr;&nbsp; Ground Truth</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <img class="vc-after" src="static/sliders/ndarklob2_gt.jpg" alt="GT">
+        <img class="vc-before" src="static/sliders/ndarklob2_radarinit5k.jpg" alt="RAMI">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/ndarklob2_gt.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/ndarklob2_radarinit5k.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div data-scene="n0630b" class="scene-row">
+    <h3 class="scene-row-title">Office <span class="gain">+2.67 dB</span></h3>
+    <div class="vc-grid">
+    <div>
+      <div class="vc-name">Random Init &nbsp;&harr;&nbsp; RAMI (Ours)</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <img class="vc-after" src="static/sliders/n0630b_radarinit5k.jpg" alt="RAMI">
+        <img class="vc-before" src="static/sliders/n0630b_rgbonly.jpg" alt="Random">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/n0630b_radarinit5k.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/n0630b_rgbonly.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="vc-name">RAMI (Ours) &nbsp;&harr;&nbsp; Ground Truth</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <img class="vc-after" src="static/sliders/n0630b_gt.jpg" alt="GT">
+        <img class="vc-before" src="static/sliders/n0630b_radarinit5k.jpg" alt="RAMI">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/n0630b_gt.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/n0630b_radarinit5k.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div data-scene="n2F" class="scene-row">
+    <h3 class="scene-row-title">Lounge <span class="gain">+1.72 dB</span></h3>
+    <div class="vc-grid">
+    <div>
+      <div class="vc-name">Random Init &nbsp;&harr;&nbsp; RAMI (Ours)</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <img class="vc-after" src="static/sliders/n2F_radarinit5k.jpg" alt="RAMI">
+        <img class="vc-before" src="static/sliders/n2F_rgbonly.jpg" alt="Random">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/n2F_radarinit5k.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/n2F_rgbonly.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="vc-name">RAMI (Ours) &nbsp;&harr;&nbsp; Ground Truth</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <img class="vc-after" src="static/sliders/n2F_gt.jpg" alt="GT">
+        <img class="vc-before" src="static/sliders/n2F_radarinit5k.jpg" alt="RAMI">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/n2F_gt.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/n2F_radarinit5k.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    </div>
+  </div>
+  <div data-scene="nF2hall" class="scene-row">
+    <h3 class="scene-row-title">Hall <span class="gain">+0.79 dB</span></h3>
+    <div class="vc-grid">
+    <div>
+      <div class="vc-name">Random Init &nbsp;&harr;&nbsp; RAMI (Ours)</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <img class="vc-after" src="static/sliders/nF2hall_radarinit5k.jpg" alt="RAMI">
+        <img class="vc-before" src="static/sliders/nF2hall_rgbonly.jpg" alt="Random">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">Random</span><span class="slabel right">RAMI</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/nF2hall_radarinit5k.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/nF2hall_rgbonly.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    <div>
+      <div class="vc-name">RAMI (Ours) &nbsp;&harr;&nbsp; Ground Truth</div>
+      <div class="vcompare still-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <img class="vc-after" src="static/sliders/nF2hall_gt.jpg" alt="GT">
+        <img class="vc-before" src="static/sliders/nF2hall_radarinit5k.jpg" alt="RAMI">
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+      <div class="vcompare video-wipe" data-start="50">
+        <span class="slabel left">RAMI</span><span class="slabel right">GT</span>
+        <video class="vc-after" loop muted playsinline preload="none"><source src="static/videos/nF2hall_gt.mp4" type="video/mp4"></video>
+        <video class="vc-before" loop muted playsinline preload="none"><source src="static/videos/nF2hall_radarinit5k.mp4" type="video/mp4"></video>
+        <div class="vc-divider"><div class="vc-handle"></div></div>
+      </div>
+    </div>
+    </div>
+  </div>
+
+      <p class="cmp-hint">Stills are a single held-out view; videos sweep the held-out trajectory at 0.5&times; speed.
+        Dark scenes are gamma-brightened for display.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== METHOD ===================== -->
+<section class="section reveal">
+  <div class="container" style="max-width:1180px;">
+    <h2 class="section-title">Method</h2>
+    <p class="section-sub">RAMI is deliberately minimal: no new losses, no trainable components,
+      no change to the 3DGS optimizer. Only the seed differs.</p>
+    <figure class="media-fig">
+      <img src="static/images/method.png" alt="RAMI pipeline">
+      <figcaption class="media-cap">
+        <b>(1)</b> Inputs: low-light RGB, odometry poses, raw radar ADC (LiDAR is <em>not</em> used).
+        <b>(2)</b> A frozen monocular model gives up-to-scale relative depth.
+        <b>(3)</b> CFAR radar returns projected into views supply one weighted scale&ndash;shift fit per scene,
+        which is the radar's sole role.
+        <b>(4)</b> Metric depths are unprojected and voxel-fused into a 5k-point seed cloud.
+        <b>(5)</b> The seed enters an otherwise unchanged 3DGS pipeline.
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== QUALITATIVE GALLERY ===================== -->
+<section class="section reveal is-soft">
+  <div class="container" style="max-width:1080px;">
+    <h2 class="section-title">Qualitative Comparison</h2>
+    <p class="section-sub">Eleven scenes (dark&nbsp;&rarr;&nbsp;bright) against recent pipelines. 3DGS-MCMC
+      collapses on the dark tier, DN-Splatter renders are softer, and SfM initialization degrades where its
+      triangulation yield collapses; RAMI stays sharp throughout.</p>
+    <figure class="media-fig">
+      <img src="static/images/qualitative.png" alt="Qualitative comparison across eleven scenes">
+    </figure>
+  </div>
+</section>
+
+<!-- ===================== RESULTS ===================== -->
+<section class="section reveal">
+  <div class="container" style="max-width:920px;">
+    <h2 class="section-title">Results</h2>
+    <p class="section-sub">Comparison with recent pipelines on all 23 benchmark scenes (mean over
+      scenes; strict training-frames-only protocol). <b>Bold</b>: best; <u>underline</u>: second best. RAMI
+      leads the dark tier and the worst case, and stays within 0.16&nbsp;dB of the
+      matched-budget LiDAR-cloud reference on the overall mean.</p>
+    <div class="table-container">
+    <table class="restable">
+      <thead><tr>
+        <th class="method">Method</th><th>PSNR&uarr;</th><th>SSIM&uarr;</th><th>LPIPS&darr;</th>
+        <th>Dark&uarr;</th><th>Dim&uarr;</th><th>Bright&uarr;</th><th>Worst&nbsp;&Delta;&nbsp;/&nbsp;#fail</th>
+      </tr></thead>
+      <tbody>
+        <tr><td class="method">3DGS (random init)</td><td>22.93</td><td>0.757</td><td>0.549</td>
+            <td>25.88</td><td>21.17</td><td>23.86</td><td class="dim">&mdash;</td></tr>
+        <tr><td class="method">+ SLV init (RAIN-GS-style)</td><td>23.00</td><td>0.759</td><td>0.554</td>
+            <td>25.75</td><td>21.23</td><td>24.06</td><td>&minus;2.49 / 11</td></tr>
+        <tr><td class="method">+ per-view tone curves (Luminance-GS-style)</td><td>20.61</td><td>0.721</td><td>0.564</td>
+            <td>22.68</td><td>19.65</td><td>20.90</td><td>&minus;11.26 / 22</td></tr>
+        <tr><td class="method">3DGS-MCMC</td><td>16.02</td><td>0.400</td><td>0.711</td>
+            <td>17.14</td><td>15.90</td><td>15.62</td><td>&minus;19.98 / 18</td></tr>
+        <tr><td class="method">DN-Splatter-style (LiDAR loss)</td><td>23.12</td><td>0.757</td>
+            <td>0.530</td><td>26.39</td><td>21.37</td><td>23.89</td><td>&minus;1.58 / 10</td></tr>
+        <tr><td class="method">3DGS + feed-forward init (DUSt3R/InstantSplat-style)</td><td>23.14</td><td>0.762</td><td>0.554</td>
+            <td>26.88</td><td>20.99</td><td>24.23</td><td>&minus;2.09 / 13</td></tr>
+        <tr><td class="method">3DGS + SfM-points init</td><td>23.96</td><td>0.773</td><td>0.529</td>
+            <td>27.15</td><td>22.15</td><td class="second">24.86</td><td>&minus;1.01 / 5</td></tr>
+        <tr><td class="method">3DGS + LiDAR-cloud init</td><td class="best">24.19</td><td class="best">0.776</td>
+            <td class="best">0.523</td><td class="second">27.23</td><td class="best">22.38</td><td class="best">25.15</td><td class="second">&minus;0.55 / 2</td></tr>
+        <tr class="ours"><td class="method">RAMI (ours, radar init)</td><td class="second">24.03</td>
+            <td class="second">0.774</td><td class="second">0.526</td><td class="best">27.26</td><td class="second">22.27</td>
+            <td>24.84</td><td><b>&minus;0.22 / 2</b></td></tr>
+      </tbody>
+    </table>
+    </div>
+    <p class="note">Full 23-scene benchmark, ablations, seed/scale/anchor-sparsity controls, and the
+      supervision-route negative results are in the paper and supplementary material (available upon
+      acceptance).</p>
+  </div>
+</section>
+
+<!-- ===================== BIBTEX ===================== -->
+<section class="section reveal is-soft bibtex">
+  <div class="container" style="max-width:920px;">
+    <h2 class="section-title">BibTeX</h2>
+<pre>@misc{rami2026,
+  title = {Radar-Anchored Metric Initialization for 3D Gaussian
+           Splatting under Suboptimal Illumination},
+  year  = {2026}
+}</pre>
+  </div>
+</section>
+
+<footer class="footer">
+  <p>The benchmark builds on the publicly released
+     <a href="https://github.com/ruixv/RadarEyes">RadarEyes</a> captures.</p>
+  <p style="margin-top:.6rem;">Page template adapted from the
+     <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a> project page
+     (<a href="http://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>).</p>
+</footer>
+
+<script src="static/js/main.js"></script>
+</body>
+</html>

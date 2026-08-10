@@ -1,0 +1,12 @@
+{
+ "n_iters": 30000,
+ "save_every": 30000,
+ "sh_warmup_every": 1000,
+ "lambda_ssim": 0.2,
+ "lambda_radar": 0.0,
+ "densify_until_iter": 8000,
+ "densify_interval": 200,
+ "grow_grad2d": 0.0008,
+ "prune_opa": 0.01,
+ "seed": 1
+}
