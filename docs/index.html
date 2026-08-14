@@ -5,9 +5,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>RAMI: Radar-Anchored Metric Initialization for 3D Gaussian Splatting</title>
-<meta name="description" content="RAMI anchors monocular depth with a single-chip mmWave radar to seed 3D Gaussian Splatting under suboptimal illumination, matching LiDAR-cloud initialization at commodity cost.">
+<meta name="description" content="RAMI anchors monocular depth with a single-chip mmWave radar to initialize 3D Gaussian Splatting under suboptimal illumination, matching LiDAR-cloud initialization at commodity cost.">
 <meta property="og:title" content="RAMI: Radar-Anchored Metric Initialization for 3DGS">
-<meta property="og:description" content="A commodity single-chip radar seeds 3DGS where SfM and depth supervision both fail under poor illumination.">
+<meta property="og:description" content="A commodity single-chip radar initializes 3DGS where SfM and depth supervision both fail under poor illumination.">
 <meta property="og:image" content="static/images/teaser.png">
 <meta property="og:type" content="website">
 
@@ -46,7 +46,7 @@
       <figcaption class="media-cap">
         <b>(a)</b> Under poor illumination SfM triangulation collapses and random 3DGS becomes a basin lottery.
         <b>(b)</b> RAMI injects metric geometry <em>once</em>: a frozen monocular depth model is lifted to metric
-        scale by a single weighted scale&ndash;shift fit to raw radar ranges, seeding an otherwise unchanged 3DGS pipeline.
+        scale by a single weighted scale&ndash;shift fit to raw radar ranges, initializing an otherwise unchanged 3DGS pipeline.
         <b>(c)</b> The commodity radar matches the far more expensive LiDAR-cloud reference
         (24.03 vs.&nbsp;24.19&nbsp;dB) without using LiDAR at any stage.
       </figcaption>
@@ -67,18 +67,18 @@
       stage of 3DGS where it cannot conflict with photometric optimization. RAMI lifts relative depth from
       a frozen monocular foundation model to metric scale with one per-scene scale&ndash;shift fit against
       single-chip mmWave radar ranges, two scalars that vision cannot recover in the dark, and fuses the
-      result into the seed cloud of an unchanged 3DGS pipeline. Across an illumination-stratified indoor
+      result into the initialization cloud of an unchanged 3DGS pipeline. Across an illumination-stratified indoor
       benchmark curated from a public 237-capture corpus, from bright rooms to lights-off, RAMI improves
       PSNR over matched random initialization by <b>+1.11&nbsp;dB</b> on average and by up to
       +3.9&nbsp;dB in the dark, and it matches a far more expensive LiDAR-cloud reference without using
       LiDAR at any stage. These results show that for mobile capture in the dark, a coarse range sensor is
       worth far more as a one-shot metric anchor than as a supervisor, which is what lets a commodity radar
-      stand in for a LiDAR-grade seed.
+      stand in for a LiDAR-grade initialization.
     </p>
     <div class="tldr">
       <b>TL;DR.</b> Poor light destroys the SfM points 3DGS starts from. A commodity single-chip radar is far
       too coarse to supervise a single pixel, yet it measures exactly the two scalars monocular depth is
-      missing. Injected once as the seed instead of attached as a loss, it places a whole scene at
+      missing. Injected once as the initialization instead of attached as a loss, it places a whole scene at
       LiDAR-level quality.
     </div>
   </div>
@@ -283,7 +283,7 @@
   <div class="container" style="max-width:1180px;">
     <h2 class="section-title">Method</h2>
     <p class="section-sub">RAMI is deliberately minimal: no new losses, no trainable components,
-      no change to the 3DGS optimizer. Only the seed differs.</p>
+      no change to the 3DGS optimizer. Only the initialization differs.</p>
     <figure class="media-fig">
       <img src="static/images/method.png" alt="RAMI pipeline">
       <figcaption class="media-cap">
@@ -291,8 +291,8 @@
         <b>(2)</b> A frozen monocular model gives up-to-scale relative depth.
         <b>(3)</b> CFAR radar returns projected into views supply one weighted scale&ndash;shift fit per scene,
         which is the radar's sole role.
-        <b>(4)</b> Metric depths are unprojected and voxel-fused into a 5k-point seed cloud.
-        <b>(5)</b> The seed enters an otherwise unchanged 3DGS pipeline.
+        <b>(4)</b> Metric depths are unprojected and voxel-fused into a 5k-point initialization cloud.
+        <b>(5)</b> The cloud enters an otherwise unchanged 3DGS pipeline.
       </figcaption>
     </figure>
   </div>
@@ -348,7 +348,7 @@
       </tbody>
     </table>
     </div>
-    <p class="note">Full 23-scene benchmark, ablations, seed/scale/anchor-sparsity controls, and the
+    <p class="note">Full 23-scene benchmark, ablations, training-seed/scale/anchor-sparsity controls, and the
       supervision-route negative results are in the paper and supplementary material (available upon
       acceptance).</p>
   </div>

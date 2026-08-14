@@ -11,7 +11,7 @@
   <img src="docs/static/images/teaser.png" width="92%" alt="RAMI teaser">
 </p>
 
-**RAMI** (Radar-Anchored Metric Initialization) seeds 3D Gaussian Splatting with metric geometry in the one place where sensor geometry cannot conflict with photometric optimization: the initial point cloud. A frozen monocular foundation model provides relative depth; a **single per-scene weighted scale–shift fit (two scalars)** against raw single-chip mmWave radar ranges lifts it to metric scale; the fused 5k-point seed enters an otherwise **unchanged** 3DGS pipeline. No new losses, no trainable components, no architecture changes.
+**RAMI** (Radar-Anchored Metric Initialization) initializes 3D Gaussian Splatting with metric geometry in the one place where sensor geometry cannot conflict with photometric optimization: the initial point cloud. A frozen monocular foundation model provides relative depth; a **single per-scene weighted scale–shift fit (two scalars)** against raw single-chip mmWave radar ranges lifts it to metric scale; the fused 5k-point seed enters an otherwise **unchanged** 3DGS pipeline. No new losses, no trainable components, no architecture changes.
 
 ## Highlights
 
@@ -29,8 +29,8 @@
 1. **Inputs**: low-light RGB, odometry poses, raw radar ADC (LiDAR is *not* used by RAMI).
 2. **Monocular foundation depth**: a frozen Depth Anything V2-Small gives up-to-scale relative depth.
 3. **Radar anchors and scale–shift fit**: CFAR detections projected into training views supply one weighted least-squares fit per scene, the radar's sole role.
-4. **Metric seed cloud**: metric depths are unprojected, voxel-fused, and subsampled to 5k points.
-5. **3DGS, unchanged**: the seed enters the standard pipeline; training and rendering are bit-identical to the baseline.
+4. **Metric initialization cloud**: metric depths are unprojected, voxel-fused, and subsampled to 5k points.
+5. **3DGS, unchanged**: the cloud enters the standard pipeline; training and rendering are bit-identical to the baseline.
 
 ## Results
 
@@ -67,7 +67,7 @@ Point `RAMI_DATA_ROOT` at a directory containing the raw capture folders listed 
 Three entry scripts, one scene at a time (`dark401a` is a small 180-frame scene, good for a first run):
 
 ```bash
-# 1. Preprocess: canonical GT export + RAMI seed cloud + SfM control cloud
+# 1. Preprocess: canonical GT export + RAMI initialization cloud + SfM control cloud
 scripts/run_preprocess.sh dark401a 0        # <scene_tag> [gpu_id]
 
 # 2. Train one arm: rami | sfm | random
@@ -80,7 +80,7 @@ scripts/run_eval.sh dark401a rami 0
 Expected outputs:
 
 - `outputs/canonical_gt/<tag>/` -- clean GT images + `splits.json` (every 8th frame held out)
-- `outputs/anchored_depth/<tag>_initcloud_trainfit.npy` -- the RAMI 5k seed cloud (the exact per-scene clouds used in the paper ship in `assets/seeds/*.ply`)
+- `outputs/anchored_depth/<tag>_initcloud_trainfit.npy` -- the RAMI 5k initialization cloud (the exact per-scene clouds used in the paper ship in `assets/seeds/*.ply`)
 - `outputs/runs/<tag>_<arm>/` -- checkpoint, renders, `metrics_vs_clean.json` (per-view and mean PSNR/SSIM/LPIPS)
 
 ### Reproducing the main table
@@ -105,10 +105,10 @@ scripts/        run_preprocess.sh / run_train.sh / run_eval.sh
 data/           RadarEyes capture loader, COLMAP-format export
 models/radar/   CFAR detection, radar anchor construction, ADC geometry
 models/baselines/  3DGS trainer + baseline registry
-tools/          preprocessing, seed-cloud generation, scoring, aggregation
+tools/          preprocessing, initialization-cloud generation, scoring, aggregation
 training/       training entrypoint (baseline_train.py)
 eval/           rendering + metric computation
-assets/         paper seed clouds (PLY) + per-scene results CSV
+assets/         paper initialization clouds (PLY) + per-scene results CSV
 docs/           project page (GitHub Pages)
 ```
 
